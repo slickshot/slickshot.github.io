@@ -53,21 +53,23 @@
         }
 
         // Make the actual CORS request.
-        function makeCorsRequest(path, callback) {
+        function makeCorsRequest(opts) {
           var url = 'http://slickshot.ngrok.com/';
-          if (path) {
-            url += path;
+          if (opts.path) {
+            url += opts.path;
           }
 
-          var xhr = createCORSRequest('GET', url);
+          var xhr = createCORSRequest(opts.method || 'GET', url);
           if (!xhr) {
             alert('CORS not supported');
             return;
           }
 
-          xhr.onload = function() {
-            callback(xhr);
-          };
+          if (opts.callback) {
+              xhr.onload = function() {
+                opts.callback(xhr);
+              };
+          }
 
           xhr.onerror = function() {
             alert('Woops, there was an error making the request.');
@@ -78,8 +80,21 @@
 
         // Get a UUID from the server
         function get_uuid() {
-            makeCorsRequest("uuid", function(xhr) {
-                uuid = xhr.responseText;
+            makeCorsRequest({
+                path: "uuid",
+                callback: function(xhr) {
+                    uuid = xhr.responseText;
+                }
+            });
+        }
+
+        function post_something() {
+            makeCorsRequest({
+                method: "POST",
+                path: "shoot",
+                callback: function(xhr) {
+                    console.log(xhr.responseText);
+                }
             });
         }
     </script>
