@@ -33,6 +33,8 @@
     </style>
     <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
     <script>
+        var uuid;
+
         // Create the XHR object.
         function createCORSRequest(method, url) {
           var xhr = new XMLHttpRequest();
@@ -77,13 +79,13 @@
         // Get a UUID from the server
         function get_uuid() {
             makeCorsRequest("uuid", function(xhr) {
-                console.log(xhr.responseText);
+                uuid = xhr.responseText;
             });
         }
     </script>
 </head>
 
-<body onload="get_uuid">
+<body onload="get_uuid()">
     <h1>Slickshot<sup>TM</sup></h1>
 
     <button id="gimme">Hit me with your best slickshot!</button>
