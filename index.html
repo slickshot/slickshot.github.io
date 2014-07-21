@@ -75,7 +75,8 @@
             alert('Woops, there was an error making the request.');
           };
 
-          xhr.send();
+          var body = JSON.stringify(opts.body) || undefined;
+          xhr.send(body);
         }
 
         // Get a UUID from the server
@@ -92,6 +93,7 @@
             makeCorsRequest({
                 method: "POST",
                 path: "shoot",
+                body: {foo: "bar"},
                 callback: function(xhr) {
                     console.log(xhr.responseText);
                 }
