@@ -2,6 +2,35 @@
 <html>
 
 <head>
+    <style>
+    body {
+        font-family: helvetica, arial, sans-serif;
+        width: 800px;
+        margin: auto;
+    }
+
+    h1 {
+        background-color: black;
+        color: white;
+        padding: 20px;
+    }
+
+    footer, footer a {
+        color: #ccc;
+    }
+
+    footer {
+        padding-top: 20px;
+        float: right;
+    }
+
+    #gimme {
+        font-size: 30px;
+        width: 800px;
+        padding: 20px;
+    }
+
+    </style>
     <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
     <script>
         // Create the XHR object.
@@ -23,7 +52,7 @@
 
         // Make the actual CORS request.
         function makeCorsRequest() {
-          var url = 'http://fivestonestudios.ngrok.com/';
+          var url = 'http://slickshot.ngrok.com/';
 
           var xhr = createCORSRequest('GET', url);
           if (!xhr) {
@@ -47,9 +76,13 @@
 </head>
 
 <body>
-    <h1>Fivestone studios</h1>
+    <h1>Slickshot<sup>TM</sup></h1>
 
-    <button id="gimme">Gimme</button>
+    <button id="gimme">Hit me with your best slickshot!</button>
+
+    <footer>
+        A <a href="http://fivestonestudios.com/">Fivestone</a> production
+    </footer>
 
     <script>
     $("#gimme").click(makeCorsRequest);
