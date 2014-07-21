@@ -51,8 +51,11 @@
         }
 
         // Make the actual CORS request.
-        function makeCorsRequest() {
+        function makeCorsRequest(path, callback) {
           var url = 'http://slickshot.ngrok.com/';
+          if (path) {
+            url += path;
+          }
 
           var xhr = createCORSRequest('GET', url);
           if (!xhr) {
@@ -60,10 +63,8 @@
             return;
           }
 
-          // Response handlers.
           xhr.onload = function() {
-            var text = xhr.responseText;
-            console.log(xhr.responseText);
+            callback(xhr);
           };
 
           xhr.onerror = function() {
@@ -72,10 +73,17 @@
 
           xhr.send();
         }
+
+        // Get a UUID from the server
+        function get_uuid() {
+            makeCorsRequest("uuid", function(xhr) {
+                console.log(xhr.responseText);
+            });
+        }
     </script>
 </head>
 
-<body>
+<body onload="get_uuid">
     <h1>Slickshot<sup>TM</sup></h1>
 
     <button id="gimme">Hit me with your best slickshot!</button>
@@ -84,8 +92,21 @@
         A <a href="http://fivestonestudios.com/">Fivestone</a> production
     </footer>
 
+    <script type="text/javascript" src="//api.filepicker.io/v1/filepicker.js"></script>
     <script>
-    $("#gimme").click(makeCorsRequest);
+    filepicker.setKey("AeU67aFwnTISMZ2yudrzgz");
+    $("#gimme").click(function() {
+        filepicker.pickAndStore(
+            {
+                mimetype: "image/*"
+            }, {
+                location: "dropbox",
+                path: "example/"
+            }, function(InkBlobs) {
+                console.log(JSON.stringify(InkBlobs));
+            }
+        );
+    });
     </script>
 
 </body>
