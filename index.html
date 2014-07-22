@@ -24,13 +24,29 @@
         float: right;
     }
 
-    #gimme {
+    #gimme, #hitme {
         font-size: 30px;
         width: 800px;
         padding: 20px;
     }
 
+    #selections {
+        list-style-type: none;
+    }
+
+    #selections li.selection {
+        float: left;
+        margin: 8px;
+    }
+
+    .spinner {
+        display: none;
+    }
+
     </style>
+
+    <link rel="stylesheet" type="text/css" href="/styles/spinner.css">
+
     <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
     <script>
         var uuid;
@@ -89,14 +105,12 @@
             });
         }
 
-        function post_something() {
+        function shoot(job, selections, callback) {
             makeCorsRequest({
                 method: "POST",
                 path: "shoot",
-                body: {foo: "bar"},
-                callback: function(xhr) {
-                    console.log(xhr.responseText);
-                }
+                body: {job: job, selections: selections},
+                callback: callback
             });
         }
     </script>
@@ -105,26 +119,62 @@
 <body onload="get_uuid()">
     <h1>Slickshot<sup>TM</sup></h1>
 
-    <button id="gimme">Hit me with your best slickshot!</button>
+    <button id="gimme">Feed me</button>
+
+    <ul id="selections">
+    </ul>
+
+    <div class="spinner">
+        <div class="bounce1"></div>
+        <div class="bounce2"></div>
+        <div class="bounce3"></div>
+    </div>
+
+    <button id="hitme" disabled>Hit me with your best slickshot!</button>
 
     <footer>
         A <a href="http://fivestonestudios.com/">Fivestone</a> production
     </footer>
 
     <script type="text/javascript" src="//api.filepicker.io/v1/filepicker.js"></script>
+    <script type="text/javascript" src="/scripts/underscore-min.js"></script>
+
     <script>
     filepicker.setKey("AeU67aFwnTISMZ2yudrzgz");
+    var selections = [],
+        template = _.template("<li class='selection'><img src='<%= src %>/convert?w=80&h=80'/></li>");
+
     $("#gimme").click(function() {
         filepicker.pickAndStore(
             {
-                mimetype: "image/*"
+                mimetype: "image/*",
+                multiple: true
             }, {
                 location: "dropbox",
                 path: uuid + "/"
             }, function(InkBlobs) {
-                console.log(JSON.stringify(InkBlobs));
+                // Save selections
+                selections = selections.concat(InkBlobs);
+
+                // Enable #hitme when there are enough selections
+                if (selections.length >= 6) {
+                    $("#hitme").attr("disabled", false);
+                }
+
+                // Render selections on the page
+                _(InkBlobs).each(function(blob) {
+                    var element = template({src: blob["url"]})
+                    $("#selections").append(element);
+                });
             }
         );
+    });
+
+    $("#hitme").click(function() {
+        $(".spinner").show();
+        shoot(uuid, _(selections).pluck("key"), function(xhr) {
+            console.log(xhr.responseText);
+        });
     });
     </script>
 
