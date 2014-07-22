@@ -24,7 +24,7 @@
         float: right;
     }
 
-    #gimme, #hitme {
+    #gimme, #hitme, #eatme, #shareme {
         font-size: 30px;
         width: 800px;
         padding: 20px;
@@ -32,6 +32,8 @@
 
     #selections {
         list-style-type: none;
+        width: 600px;
+        margin: auto;
     }
 
     #selections li.selection {
@@ -81,48 +83,92 @@
             return;
           }
 
-          if (opts.callback) {
+          if (opts.success) {
               xhr.onload = function() {
-                opts.callback(xhr);
+                opts.success(xhr);
               };
           }
 
-          xhr.onerror = function() {
-            alert('Woops, there was an error making the request.');
-          };
+          if (opts.error) {
+              xhr.onerror = function() {
+                opts.error(xhr);
+              };
+          } else {
+              xhr.onerror = function() {
+                alert('Woops, there was an error making the request.');
+              };
+          }
 
-          var body = JSON.stringify(opts.body) || undefined;
+          var body = opts.body || undefined;
           xhr.send(body);
         }
 
         // Get a UUID from the server
-        function get_uuid() {
+        $(document).ready(function() {
             makeCorsRequest({
                 path: "uuid",
-                callback: function(xhr) {
-                    uuid = xhr.responseText;
+                success: function(xhr) {
+                    // Save the UUID globally
+                    window.uuid = xhr.responseText;
+
+                    // Enable #gimme
+                    $("#gimme").attr("disabled", false);
                 }
             });
-        }
+        });
 
         function shoot(job, selections, callback) {
             makeCorsRequest({
                 method: "POST",
                 path: "shoot",
-                body: {job: job, selections: selections},
-                callback: callback
+                body: JSON.stringify({job: job, selections: selections}),
+                success: callback
             });
+        }
+
+        function status(job, callback) {
+            makeCorsRequest({
+                path: "status?job=" + job,
+                success: callback
+            })
+        }
+
+        function share(job, callback) {
+            makeCorsRequest({
+                method: "POST",
+                path: "share",
+                body: JSON.stringify({job: job}),
+                success: callback
+            });
+        }
+
+        function poll(job, callback) {
+            status(
+                job,
+                function(xhr) {
+                    if (xhr.status === 200) {
+                        callback(xhr);
+                    } else {
+                        console.warn("Booo!!!", xhr.responseText);
+                        setTimeout(function() {
+                            poll(job, callback);
+                        }, 10000);
+                    }
+                }
+            );
         }
     </script>
 </head>
 
-<body onload="get_uuid()">
+<body>
     <h1>Slickshot<sup>TM</sup></h1>
 
-    <button id="gimme">Feed me</button>
+    <button id="gimme" disabled>Feed me</button>
 
     <ul id="selections">
     </ul>
+
+    <button id="hitme" disabled>Hit me with your best slickshot!</button>
 
     <div class="spinner">
         <div class="bounce1"></div>
@@ -130,19 +176,23 @@
         <div class="bounce3"></div>
     </div>
 
-    <button id="hitme" disabled>Hit me with your best slickshot!</button>
+    <button id="eatme" disabled>Eat me</button>
+
+    <button id="shareme" disabled>Share me</button>
 
     <footer>
         A <a href="http://fivestonestudios.com/">Fivestone</a> production
     </footer>
 
     <script type="text/javascript" src="//api.filepicker.io/v1/filepicker.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/dropbox.js/0.10.2/dropbox.min.js"></script>
     <script type="text/javascript" src="/scripts/underscore-min.js"></script>
 
     <script>
     filepicker.setKey("AeU67aFwnTISMZ2yudrzgz");
     var selections = [],
-        template = _.template("<li class='selection'><img src='<%= src %>/convert?w=80&h=80'/></li>");
+        selectionTemplate = _.template("<li class='selection'><img src='<%= src %>/convert?w=80&h=80'/></li>"),
+        shareTemplate = _.template("https://www.facebook.com/sharer/sharer.php?u=<%= escape(url) %>");
 
     $("#gimme").click(function() {
         filepicker.pickAndStore(
@@ -163,7 +213,7 @@
 
                 // Render selections on the page
                 _(InkBlobs).each(function(blob) {
-                    var element = template({src: blob["url"]})
+                    var element = selectionTemplate({src: blob["url"]})
                     $("#selections").append(element);
                 });
             }
@@ -171,9 +221,31 @@
     });
 
     $("#hitme").click(function() {
+        $("#hitme").attr("disabled", true);
         $(".spinner").show();
         shoot(uuid, _(selections).pluck("key"), function(xhr) {
             console.log(xhr.responseText);
+            // Start trying to share the job
+            // Keep trying until it's ready
+            poll(uuid, function(xhr) {
+                share(uuid, function(xhr) {
+                    var data = JSON.parse(xhr.response);
+                    $(".spinner").hide();
+                    $("#eatme")
+                        .attr("disabled", false)
+                        .css("background-color", "rgb(126,191,43)")
+                        .click(function() {
+                            // document.location = data["url"];
+                            window.open(data["url"]);
+                        });
+                    $("#shareme")
+                        .attr("disabled", false)
+                        .css("background-color", "rgb(43,123,191)")
+                        .click(function() {
+                            window.open(shareTemplate({url: data["url"]}));
+                        });
+                });
+            });
         });
     });
     </script>
